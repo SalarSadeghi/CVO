@@ -1,0 +1,11 @@
+services:
+  scanner-ui:
+    image: coilvision-frontend:1.0.0
+    build:
+      context: .
+    ports:
+      - "3000:8080"
+    labels:
+      com.coilvision.project: coilvision
+      com.coilvision.component: scanner-frontend
+    restart: unless-stopped
