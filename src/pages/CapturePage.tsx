@@ -5,7 +5,10 @@ import {
   Alert,
   Box,
   Button,
-  Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   LinearProgress,
   Snackbar,
   Stack,
@@ -13,7 +16,7 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { PageHeader } from "../components/PageHeader";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { APP_CONFIG } from "../config/app.config";
 import { CapturePreviewCard } from "../features/capture/components/CapturePreviewCard";
 import { ImagePicker } from "../features/capture/components/ImagePicker";
@@ -36,6 +39,10 @@ export function CapturePage() {
   const clearDrafts = useCaptureStore((state) => state.clearDrafts);
   const saveBatch = useSaveCaptureBatch();
   const [notice, setNotice] = useState<string | null>(null);
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const selectedImage = drafts.find((image) => image.id === selectedId);
 
   const remainingSlots = APP_CONFIG.maxImagesPerRequest - drafts.length;
   const progress = (drafts.length / APP_CONFIG.maxImagesPerRequest) * 100;
@@ -72,31 +79,27 @@ export function CapturePage() {
 
   return (
     <Stack spacing={3}>
-      <PageHeader
-        eyebrow="بازرسی جدید"
-        title="ثبت مجموعه تصاویر"
-        description="برای هر درخواست یک مجموعه تصویر واضح آماده کنید. پیش از ذخیره یا آماده‌سازی برای ارسال، همهٔ تصاویر را بررسی کنید."
-      />
-
-      <Alert
-        icon={<CheckCircleRoundedIcon />}
-        severity="info"
-        variant="outlined"
-      >
-        در این نسخه هیچ اطلاعاتی به سرور ارسال نمی‌شود و تصاویر فقط در همین
-        مرورگر و روی دستگاه شما می‌مانند.
-      </Alert>
-
-      <ImagePicker
-        disabled={remainingSlots === 0 || saveBatch.isPending}
-        onFilesSelected={handleFiles}
-        remainingSlots={remainingSlots}
-      />
+      <Typography component="h1" variant="h2">
+        ثبت مجموعه تصاویر
+      </Typography>
 
       {drafts.length > 0 && (
-        <Stack spacing={2}>
+        <Stack
+          spacing={1}
+          sx={{
+            position: "sticky",
+            top: 80,
+            zIndex: (theme) => theme.zIndex.appBar - 1,
+            bgcolor: "background.paper",
+            border: 1,
+            borderColor: "divider",
+            borderRadius: 2,
+            p: 1.5,
+            boxShadow: 4,
+          }}
+        >
           <Stack
-            direction={{ xs: "column", sm: "row" }}
+            direction="row"
             spacing={1.5}
             sx={{
               alignItems: { xs: "stretch", sm: "center" },
@@ -124,54 +127,122 @@ export function CapturePage() {
             <Button
               color="inherit"
               disabled={saveBatch.isPending}
-              onClick={clearDrafts}
+              onClick={() => setDeleteTarget("all")}
             >
               حذف همه
             </Button>
           </Stack>
 
-          <Grid container spacing={2}>
-            {drafts.map((image, index) => (
-              <Grid key={image.id} size={{ xs: 12, sm: 6, md: 4 }}>
-                <CapturePreviewCard
-                  image={image}
-                  index={index}
-                  onRemove={removeDraft}
-                />
-              </Grid>
-            ))}
-          </Grid>
-
           <Stack
-            direction={{ xs: "column-reverse", sm: "row" }}
-            spacing={1.5}
-            useFlexGap
-            sx={{ justifyContent: "flex-end" }}
+            direction="row"
+            spacing={1}
+            role="region"
+            aria-label="تصاویر انتخاب‌شده"
+            tabIndex={0}
+            sx={{ overflowX: "auto", py: 0.5, minWidth: 0 }}
           >
-            <Button
-              disabled={saveBatch.isPending}
-              onClick={() => void persist("saved")}
-              startIcon={<SaveOutlinedIcon />}
-              variant="outlined"
-            >
-              <Typography sx={{ paddingX: "8px" }}>
-                {" "}
-                ذخیره روی دستگاه
-              </Typography>
-            </Button>
-            <Button
-              disabled={saveBatch.isPending}
-              onClick={() => void persist("ready")}
-              startIcon={<SendRoundedIcon />}
-              variant="contained"
-            >
-              <Typography sx={{ paddingX: "8px" }}>
-                {saveBatch.isPending ? "در حال ذخیره…" : "ذخیره و آماده‌سازی"}
-              </Typography>
-            </Button>
+            {drafts.map((image, index) => (
+              <CapturePreviewCard
+                key={image.id}
+                image={image}
+                index={index}
+                disabled={saveBatch.isPending}
+                onOpen={setSelectedId}
+                onRemove={setDeleteTarget}
+              />
+            ))}
           </Stack>
         </Stack>
       )}
+
+      <ImagePicker
+        disabled={remainingSlots === 0 || saveBatch.isPending}
+        onFilesSelected={handleFiles}
+        remainingSlots={remainingSlots}
+      />
+
+      {drafts.length > 0 && (
+        <Stack
+          direction={{ xs: "column-reverse", sm: "row" }}
+          spacing={1.5}
+          useFlexGap
+          sx={{ justifyContent: "flex-end" }}
+        >
+          <Button
+            disabled={saveBatch.isPending}
+            onClick={() => void persist("saved")}
+            startIcon={<SaveOutlinedIcon />}
+            variant="outlined"
+          >
+            <Typography sx={{ paddingX: "8px" }}> ذخیره روی دستگاه</Typography>
+          </Button>
+          <Button
+            disabled={saveBatch.isPending}
+            onClick={() => void persist("ready")}
+            startIcon={<SendRoundedIcon />}
+            variant="contained"
+          >
+            <Typography sx={{ paddingX: "8px" }}>
+              {saveBatch.isPending ? "در حال ذخیره…" : "ذخیره و آماده‌سازی"}
+            </Typography>
+          </Button>
+        </Stack>
+      )}
+
+      <Alert
+        icon={<CheckCircleRoundedIcon />}
+        severity="info"
+        variant="outlined"
+      >
+        تصاویر فقط در همین مرورگر و روی دستگاه شما ذخیره می‌شوند.
+      </Alert>
+
+      <Dialog
+        fullWidth
+        maxWidth="lg"
+        open={Boolean(selectedImage)}
+        onClose={() => setSelectedId(null)}
+        aria-labelledby="capture-preview-title"
+      >
+        <DialogTitle
+          id="capture-preview-title"
+          sx={{ overflowWrap: "anywhere" }}
+        >
+          {selectedImage?.file.name}
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: "center", p: 1 }}>
+          {selectedImage && (
+            <Box
+              component="img"
+              src={selectedImage.previewUrl}
+              alt={selectedImage.file.name}
+              sx={{
+                display: "block",
+                width: "100%",
+                maxHeight: "75dvh",
+                objectFit: "contain",
+              }}
+            />
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSelectedId(null)}>بستن</Button>
+        </DialogActions>
+      </Dialog>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title={deleteTarget === "all" ? "حذف همه تصاویر؟" : "حذف تصویر؟"}
+        description="تصاویر انتخاب‌شده از این مجموعه حذف می‌شوند."
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (!saveBatch.isPending && deleteTarget) {
+            if (deleteTarget === "all") clearDrafts();
+            else removeDraft(deleteTarget);
+          }
+          setDeleteTarget(null);
+        }}
+      />
 
       {saveBatch.isError && (
         <Alert severity="error">

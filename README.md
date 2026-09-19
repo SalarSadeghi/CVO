@@ -4,14 +4,14 @@ React and TypeScript frontend for collecting coil inspection photos. This versio
 
 ## Current features
 
-- Open a live in-app camera view and capture a photo, or separately select multiple image files from the device.
+- Open the live camera inline on the capture page and take consecutive photos, or separately select multiple image files from the device.
 - Build a request of up to 10 photos by default.
-- Preview and remove individual images before saving.
+- Review compact thumbnails in a sticky strip above the camera; open an original-resolution image in a large dialog or remove images before saving.
 - Save a photo set locally or mark it ready for future submission.
 - Browse locally saved sets and delete an image, a set, or the whole library.
 - Review per-image processing data and statuses: pending, detected, not detected, bad detection, and failed.
 - Responsive Material UI design with desktop and mobile navigation.
-- Persian right-to-left interface with locally bundled BYekan and Asap fonts.
+- Persian right-to-left interface with locally bundled IRANSans fonts (Light, Regular, Medium, and Bold).
 - Static routing compatible with GitHub Pages.
 
 Images are stored as blobs in IndexedDB, not localStorage. Unsaved selections live in a small Zustand store. TanStack React Query coordinates asynchronous IndexedDB operations and is ready for future server state.

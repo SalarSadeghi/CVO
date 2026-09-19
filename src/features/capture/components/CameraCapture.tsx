@@ -7,37 +7,31 @@ import {
   Box,
   Button,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
+  Paper,
   IconButton,
   Stack,
   Typography,
-  useMediaQuery,
-  useTheme,
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 
 type CameraStatus = "idle" | "requesting" | "ready" | "error";
 type FacingMode = "environment" | "user";
 
-interface CameraCaptureDialogProps {
-  open: boolean;
+interface CameraCaptureProps {
+  disabled?: boolean;
   remainingSlots: number;
   onCapture: (file: File) => void;
   onClose: () => void;
 }
 
-export function CameraCaptureDialog({
-  open,
+export function CameraCapture({
+  disabled = false,
   remainingSlots,
   onCapture,
   onClose,
-}: CameraCaptureDialogProps) {
-  const theme = useTheme();
-  const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
+}: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const sessionRef = useRef(0);
   const streamRef = useRef<MediaStream | null>(null);
   const [status, setStatus] = useState<CameraStatus>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -46,9 +40,8 @@ export function CameraCaptureDialog({
   const [isCapturing, setIsCapturing] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
-
     let cancelled = false;
+    sessionRef.current += 1;
     setStatus("requesting");
     setError(null);
 
@@ -79,9 +72,11 @@ export function CameraCaptureDialog({
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
         }
-        setStatus("ready");
+        if (!cancelled) setStatus("ready");
       } catch (cause) {
         if (cancelled) return;
+        streamRef.current?.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
         setError(getCameraErrorMessage(cause));
         setStatus("error");
       }
@@ -91,11 +86,12 @@ export function CameraCaptureDialog({
 
     return () => {
       cancelled = true;
+      sessionRef.current += 1;
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
       if (videoRef.current) videoRef.current.srcObject = null;
     };
-  }, [facingMode, open, requestVersion]);
+  }, [facingMode, requestVersion]);
 
   const handleClose = () => {
     if (isCapturing) return;
@@ -104,9 +100,18 @@ export function CameraCaptureDialog({
 
   const captureFrame = async () => {
     const video = videoRef.current;
-    if (!video || status !== "ready" || !video.videoWidth || !video.videoHeight)
+    if (
+      disabled ||
+      remainingSlots <= 0 ||
+      isCapturing ||
+      !video ||
+      status !== "ready" ||
+      !video.videoWidth ||
+      !video.videoHeight
+    )
       return;
 
+    const session = sessionRef.current;
     setIsCapturing(true);
     try {
       const canvas = document.createElement("canvas");
@@ -117,6 +122,7 @@ export function CameraCaptureDialog({
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
       const blob = await canvasToBlob(canvas);
+      if (session !== sessionRef.current) return;
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
       onCapture(
         new File([blob], `coil-${timestamp}.jpg`, {
@@ -124,27 +130,24 @@ export function CameraCaptureDialog({
           lastModified: Date.now(),
         }),
       );
-      onClose();
     } catch {
+      if (session !== sessionRef.current) return;
       setError("ثبت تصویر انجام نشد. لطفاً دوباره تلاش کنید.");
       setStatus("error");
     } finally {
-      setIsCapturing(false);
+      if (session === sessionRef.current) setIsCapturing(false);
     }
   };
 
   return (
-    <Dialog
-      aria-labelledby="camera-dialog-title"
-      fullScreen={fullScreen}
-      fullWidth
-      maxWidth="md"
-      onClose={handleClose}
-      open={open}
+    <Paper
+      variant="outlined"
+      aria-label="دوربین ثبت تصویر"
+      sx={{ overflow: "hidden" }}
     >
-      <DialogTitle
-        id="camera-dialog-title"
+      <Box
         sx={{
+          p: 1.5,
           alignItems: "center",
           display: "flex",
           justifyContent: "space-between",
@@ -170,28 +173,28 @@ export function CameraCaptureDialog({
         >
           <CloseRoundedIcon />
         </IconButton>
-      </DialogTitle>
+      </Box>
 
-      <DialogContent
+      <Box
         sx={{
           display: "grid",
-          minHeight: { xs: 360, sm: 500 },
           p: { xs: 1, sm: 2 },
           placeItems: "center",
+          width: "100%",
         }}
       >
         <Box
           sx={{
             bgcolor: "#020504",
             borderRadius: { xs: 0, sm: 2 },
-            height: "100%",
-            minHeight: { xs: 340, sm: 460 },
+            height: "clamp(180px, 36dvh, 420px)",
             overflow: "hidden",
             position: "relative",
             width: "100%",
           }}
         >
           <Box
+            width={"1000px"}
             autoPlay
             component="video"
             muted
@@ -242,12 +245,15 @@ export function CameraCaptureDialog({
             </Stack>
           )}
         </Box>
-      </DialogContent>
+      </Box>
 
-      <DialogActions sx={{ justifyContent: "center", p: 2, gap: 4 }}>
+      <Stack
+        direction="row"
+        sx={{ justifyContent: "center", p: 1.5, gap: 1, flexWrap: "wrap" }}
+      >
         <Button
           aria-label="تغییر دوربین جلو و پشت"
-          disabled={status !== "ready" || isCapturing}
+          disabled={disabled || status !== "ready" || isCapturing}
           onClick={() =>
             setFacingMode((value) =>
               value === "environment" ? "user" : "environment",
@@ -259,7 +265,9 @@ export function CameraCaptureDialog({
           <Typography sx={{ paddingX: "8px" }}> تغییر دوربین</Typography>
         </Button>
         <Button
-          disabled={status !== "ready" || isCapturing}
+          disabled={
+            disabled || remainingSlots <= 0 || status !== "ready" || isCapturing
+          }
           onClick={() => void captureFrame()}
           startIcon={<PhotoCameraRoundedIcon />}
           variant="contained"
@@ -269,8 +277,8 @@ export function CameraCaptureDialog({
             {isCapturing ? "در حال ثبت…" : "ثبت عکس"}
           </Typography>
         </Button>
-      </DialogActions>
-    </Dialog>
+      </Stack>
+    </Paper>
   );
 }
 
