@@ -203,7 +203,8 @@ export function CameraCapture({
             sx={{
               display: "block",
               height: "100%",
-              objectFit: "contain",
+              // objectFit: "contain",
+              objectFit: "cover",
               position: "absolute",
               width: "100%",
             }}

@@ -139,6 +139,7 @@ export function CapturePage() {
             role="region"
             aria-label="تصاویر انتخاب‌شده"
             tabIndex={0}
+            useFlexGap
             sx={{ overflowX: "auto", py: 0.5, minWidth: 0 }}
           >
             {drafts.map((image, index) => (
