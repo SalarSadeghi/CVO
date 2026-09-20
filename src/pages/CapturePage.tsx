@@ -195,7 +195,9 @@ export function CapturePage() {
         severity="info"
         variant="outlined"
       >
-        تصاویر فقط در همین مرورگر و روی دستگاه شما ذخیره می‌شوند.
+        <Typography variant="caption" sx={{ paddingX: 1 }}>
+          تصاویر فقط در همین مرورگر و روی دستگاه شما ذخیره می‌شوند.
+        </Typography>
       </Alert>
 
       <Dialog

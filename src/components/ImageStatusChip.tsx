@@ -9,12 +9,32 @@ import type { ImageProcessingStatus } from "../types/domain";
 
 const statusPresentation: Record<
   ImageProcessingStatus,
-  { label: string; color: "default" | "success" | "warning" | "error"; icon: typeof CheckCircleRounded }
+  {
+    label: string;
+    color: "default" | "success" | "warning" | "error";
+    icon: typeof CheckCircleRounded;
+  }
 > = {
-  pending: { label: "در انتظار پردازش", color: "default", icon: HourglassTopRounded },
-  detected: { label: "شناسایی‌شده", color: "success", icon: CheckCircleRounded },
-  "not-detected": { label: "شناسایی‌نشده", color: "warning", icon: RemoveCircleRounded },
-  "bad-detection": { label: "شناسایی نامعتبر", color: "warning", icon: HelpRounded },
+  pending: {
+    label: "در انتظار پردازش",
+    color: "default",
+    icon: HourglassTopRounded,
+  },
+  detected: {
+    label: "شناسایی‌شده",
+    color: "success",
+    icon: CheckCircleRounded,
+  },
+  "not-detected": {
+    label: "شناسایی‌نشده",
+    color: "warning",
+    icon: RemoveCircleRounded,
+  },
+  "bad-detection": {
+    label: "شناسایی نامعتبر",
+    color: "warning",
+    icon: HelpRounded,
+  },
   failed: { label: "ناموفق", color: "error", icon: ErrorRounded },
 };
 
@@ -23,8 +43,19 @@ interface ImageStatusChipProps {
   size?: "small" | "medium";
 }
 
-export function ImageStatusChip({ status, size = "small" }: ImageStatusChipProps) {
+export function ImageStatusChip({
+  status,
+  size = "small",
+}: ImageStatusChipProps) {
   const presentation = statusPresentation[status];
   const Icon = presentation.icon;
-  return <Chip size={size} color={presentation.color} icon={<Icon />} label={presentation.label} variant="outlined" />;
+  return (
+    <Chip
+      size={size}
+      color={presentation.color}
+      // icon={<Icon />}
+      label={presentation.label}
+      variant="outlined"
+    />
+  );
 }

@@ -70,7 +70,7 @@ export function SavedImagesPage() {
                 onClick={() => setDeleteTarget({ kind: "all" })}
                 startIcon={<DeleteSweepRoundedIcon />}
               >
-                حذف همه
+                <Typography sx={{ paddingX: "4px" }}>حذف همه</Typography>
               </Button>
             )}
             <Button
